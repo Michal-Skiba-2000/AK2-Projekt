@@ -75,6 +75,38 @@ class EdgeListGraph:
         print('TSP order: {}'.format(tsp_order))
         print('Control flow transfers: {}'.format(self._get_control_flow_transfer(tsp_order)))
 
+    def cache(self):
+        edge_list = list(self.edge_list)
+        while len(edge_list) != 1:
+            max_edge = self._get_max_edge(edge_list)
+            edge_list.remove(max_edge)
+            first_vertex_edges = self._get_vertex_edges(max_edge[0], edge_list)
+            second_vertex_edges = self._get_vertex_edges(max_edge[1], edge_list)
+            new_vertex_name = self._join_edge_with__cache_reorder(max_edge)
+            for info in first_vertex_edges:
+                vertex_in_info = self._vertex_in_info(info[1], second_vertex_edges)
+                value = 0
+                size = 0
+                if vertex_in_info is not None:
+                    edge = second_vertex_edges[vertex_in_info][0]
+                    value = edge[2]
+                    size = edge[3]
+                    edge_list.remove(edge)
+                    second_vertex_edges.pop(vertex_in_info)
+                index = edge_list.index(info[0])
+                if info[0][0] == info[1]:
+                    size_2 = info[0][3]
+                else:
+                    size_2 = info[0][4]
+                edge_list[index] = [new_vertex_name, info[1], info[0][2]+value, info[0][3]+size, size_2]
+            for info in second_vertex_edges:
+                index = edge_list.index(info[0])
+                edge_list[index] = [new_vertex_name, info[1], info[0][2], info[0][3]]
+        max_order = self._join_edge_with__cache_reorder(edge_list[0])
+        print('Cache order: {}'.format(max_order))
+        print('Control flow transfers: {}'.format(self._get_control_flow_transfer(max_order)))
+        return max_order
+
     @staticmethod
     def _get_max_edge(edge_list):
         max_edge = [None, None, -sys.maxsize]
@@ -111,9 +143,9 @@ class EdgeListGraph:
         if len_0 == 1:
             value_0 = self._get_edge_value_for_vertexes(edge[0], edge[1][0])
             value_1 = self._get_edge_value_for_vertexes(edge[0], edge[1][-1])
-            if value_0 is None:
+            if value_0 == 0:
                 return edge[1] + edge[0]
-            elif value_1 is None:
+            elif value_1 == 0:
                 return edge[0] + edge[1]
             elif value_0 > value_1:
                 return edge[0] + edge[1]
@@ -122,9 +154,9 @@ class EdgeListGraph:
         elif len_1 == 1:
             value_0 = self._get_edge_value_for_vertexes(edge[0][0], edge[1])
             value_1 = self._get_edge_value_for_vertexes(edge[0][-1], edge[1])
-            if value_0 is None:
+            if value_0 == 0:
                 return edge[0] + edge[1]
-            elif value_1 is None:
+            elif value_1 == 0:
                 return edge[1] + edge[0]
             elif value_0 > value_1:
                 return edge[1] + edge[0]
@@ -174,6 +206,12 @@ class EdgeListGraph:
                 return edge[1] + edge[0]
             elif max_value == value_3:
                 return edge[0] + edge[1][1] + edge[1][0]
+        else:
+            return edge[0] + edge[1]
+
+    def _join_edge_with__cache_reorder(self, edge):
+        if edge[3] > edge[4]:
+            return edge[1] + edge[0]
         else:
             return edge[0] + edge[1]
 
